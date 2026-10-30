@@ -31,3 +31,11 @@ Upload `index.html`, `style.css`, `script.js`, and `readme.md` to the repository
 - The page links to official sources; it does not automatically import live news headlines.
 - Telsa.io is an independent publication and is not affiliated with Tesla, SpaceX, NASA, OpenAI, Elon Musk, or any organization mentioned.
 - Do not add passwords, verification codes, or private API keys to public files.
+
+## Latest mobile fixes
+The latest `style.css` fixes the small-screen navigation and makes contact/newsletter form fields stack vertically. The HTML references versioned CSS/JS filenames (`?v=3`) to help browsers load the latest files instead of an old cached version.
+
+After uploading all four files, refresh the live site. If the old design remains, close the browser tab and open the site again.
+
+## Important: real member accounts
+Uploading files alone cannot activate sign-up/login. You still need to create a Supabase project and add its Project URL and public publishable/anon key to `script.js`. Never use a service-role/secret key. Once you have the Supabase project details, the auth setup can be completed.
