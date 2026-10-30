@@ -1,73 +1,90 @@
-// Telsa.io — front-end interactions.
-// Newsletter and account forms are demos. Connect a trusted backend/service before collecting real data.
+/* Telsa.io frontend.
+   Contact/newsletter forms use FormSubmit. Real member accounts require Supabase configuration below.
+   Never put a service-role key or email password in this public file. */
+const SUPABASE_URL = ""; // Add your Supabase project URL
+const SUPABASE_ANON_KEY = ""; // Add your Supabase publishable/anon key only
+let supabaseClient = null;
+let authMode = "signup";
 
 document.addEventListener("DOMContentLoaded", () => {
   const menuToggle = document.getElementById("menuToggle");
-  const mainNav = document.getElementById("mainNav");
-  const dialog = document.getElementById("accountDialog");
-  const openButtons = [document.getElementById("openAccount"), document.getElementById("footerAccount")];
-  const closeButton = document.getElementById("closeAccount");
-  const accountForm = document.getElementById("accountForm");
-  const accountMessage = document.getElementById("accountMessage");
-  const accountName = document.getElementById("accountName");
-  const nameLabel = document.getElementById("nameLabel");
-  const accountPassword = document.getElementById("accountPassword");
-  const accountSubmit = document.getElementById("accountSubmit");
-  const newsletterForm = document.getElementById("newsletterForm");
-  const newsletterMessage = document.getElementById("newsletterMessage");
-  let currentTab = "signup";
-
+  const siteNav = document.getElementById("siteNav");
+  menuToggle?.addEventListener("click", () => {
+    const open = siteNav.classList.toggle("open");
+    menuToggle.setAttribute("aria-expanded", String(open));
+    menuToggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+    menuToggle.textContent = open ? "×" : "☰";
+  });
+  siteNav?.querySelectorAll("a").forEach(a => a.addEventListener("click", () => {
+    siteNav.classList.remove("open");
+    menuToggle?.setAttribute("aria-expanded", "false");
+    if (menuToggle) { menuToggle.textContent = "☰"; menuToggle.setAttribute("aria-label", "Open menu"); }
+  }));
   document.getElementById("year").textContent = new Date().getFullYear();
 
-  menuToggle.addEventListener("click", () => {
-    const isOpen = mainNav.classList.toggle("open");
-    menuToggle.setAttribute("aria-expanded", String(isOpen));
-    menuToggle.setAttribute("aria-label", isOpen ? "Close navigation" : "Open navigation");
-    menuToggle.textContent = isOpen ? "×" : "☰";
-  });
+  const modal = document.getElementById("authModal");
+  const openAuth = document.getElementById("openAuth");
+  const closeAuth = document.getElementById("closeAuth");
+  openAuth?.addEventListener("click", () => { modal.hidden = false; document.getElementById("authEmail").focus(); });
+  closeAuth?.addEventListener("click", () => { modal.hidden = true; });
+  modal?.addEventListener("click", e => { if (e.target === modal) modal.hidden = true; });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && modal) modal.hidden = true; });
 
-  mainNav.querySelectorAll("a").forEach(link => {
-    link.addEventListener("click", () => {
-      mainNav.classList.remove("open");
-      menuToggle.setAttribute("aria-expanded", "false");
-      menuToggle.textContent = "☰";
-    });
-  });
-
-  function openDialog() {
-    if (typeof dialog.showModal === "function") dialog.showModal();
-    else alert("Your browser does not support the account preview dialog.");
+  document.getElementById("signupTab").addEventListener("click", () => setAuthMode("signup"));
+  document.getElementById("loginTab").addEventListener("click", () => setAuthMode("login"));
+  if (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY) {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
-  openButtons.forEach(button => button.addEventListener("click", openDialog));
-  closeButton.addEventListener("click", () => dialog.close());
-  dialog.addEventListener("click", event => {
-    if (event.target === dialog) dialog.close();
-  });
 
-  document.querySelectorAll(".tab").forEach(tab => {
-    tab.addEventListener("click", () => {
-      currentTab = tab.dataset.tab;
-      document.querySelectorAll(".tab").forEach(item => item.classList.toggle("active", item === tab));
-      const isSignup = currentTab === "signup";
-      accountName.hidden = !isSignup;
-      nameLabel.hidden = !isSignup;
-      accountName.required = isSignup;
-      accountPassword.autocomplete = isSignup ? "new-password" : "current-password";
-      accountSubmit.textContent = isSignup ? "Create demo account" : "Sign-in preview";
-      accountMessage.textContent = "";
-    });
-  });
-
-  accountForm.addEventListener("submit", event => {
-    event.preventDefault();
-    accountMessage.textContent = currentTab === "signup"
-      ? "Preview only: no account was created. Connect a secure authentication backend to enable registration."
-      : "Preview only: sign-in is not connected. No credentials were sent or saved.";
-  });
-
-  newsletterForm.addEventListener("submit", event => {
-    event.preventDefault();
-    newsletterMessage.textContent = "Thanks! This demo did not store your email. Connect a newsletter provider to enable subscriptions.";
-    newsletterForm.reset();
-  });
+  document.getElementById("authForm").addEventListener("submit", handleAuth);
+  configureFormStatus("contactForm", "contactStatus", "Your email app/service will process this message. If this is your first submission, check your inbox for FormSubmit's activation email.");
+  configureFormStatus("newsletterForm", "newsletterStatus", "Subscription request submitted. Confirm the FormSubmit activation email if this is the first use. A mailing-list service is needed for automatic newsletters.");
 });
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const signup = mode === "signup";
+  document.getElementById("signupTab").classList.toggle("active", signup);
+  document.getElementById("loginTab").classList.toggle("active", !signup);
+  document.getElementById("authTitle").textContent = signup ? "Join Telsa.io" : "Welcome back";
+  document.getElementById("authSubmit").textContent = signup ? "Create account" : "Sign in";
+  document.getElementById("authPassword").autocomplete = signup ? "new-password" : "current-password";
+  document.getElementById("authStatus").textContent = "";
+}
+
+async function handleAuth(event) {
+  event.preventDefault();
+  const status = document.getElementById("authStatus");
+  const button = document.getElementById("authSubmit");
+  const email = document.getElementById("authEmail").value.trim();
+  const password = document.getElementById("authPassword").value;
+  if (!supabaseClient) {
+    status.textContent = "Member accounts are not active yet. The site owner must add the Supabase project URL and publishable key to script.js and enable email authentication in Supabase.";
+    return;
+  }
+  button.disabled = true;
+  status.textContent = authMode === "signup" ? "Creating your account…" : "Signing in…";
+  try {
+    const result = authMode === "signup"
+      ? await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } })
+      : await supabaseClient.auth.signInWithPassword({ email, password });
+    if (result.error) throw result.error;
+    status.textContent = authMode === "signup"
+      ? "Signup request received. Check your email for a verification link if email confirmation is enabled."
+      : "You are signed in successfully.";
+  } catch (error) {
+    status.textContent = error.message || "We could not complete the request. Please try again.";
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function configureFormStatus(formId, statusId, successMessage) {
+  const form = document.getElementById(formId);
+  const status = document.getElementById(statusId);
+  form.addEventListener("submit", () => {
+    status.textContent = "Sending…";
+    // FormSubmit handles the POST. This is a progress note, not proof of delivery.
+    window.setTimeout(() => { if (status.textContent === "Sending…") status.textContent = successMessage; }, 1200);
+  });
+}
