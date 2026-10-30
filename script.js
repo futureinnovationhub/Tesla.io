@@ -49,7 +49,8 @@ function setAuthMode(mode) {
   document.getElementById("authTitle").textContent = signup ? "Join Telsa.io" : "Welcome back";
   document.getElementById("authSubmit").textContent = signup ? "Create account" : "Sign in";
   document.getElementById("authPassword").autocomplete = signup ? "new-password" : "current-password";
-  document.getElementById("authStatus").textContent = "";
+  document.getElementById("authPhone").required = signup;
+   document.getElementById("authStatus").textContent = "";
 }
 
 async function handleAuth(event) {
@@ -58,7 +59,12 @@ async function handleAuth(event) {
   const button = document.getElementById("authSubmit");
   const email = document.getElementById("authEmail").value.trim();
   const password = document.getElementById("authPassword").value;
-  if (!supabaseClient) {
+  const phone = document.getElementById("authPhone").value.trim();
+   if (authMode === "signup" && !phone) {
+  status.textContent = "Please enter your phone number.";
+  return;
+}
+   if (!supabaseClient) {
     status.textContent = "Member accounts are not active yet. The site owner must add the Supabase project URL and publishable key to script.js and enable email authentication in Supabase.";
     return;
   }
@@ -66,7 +72,14 @@ async function handleAuth(event) {
   status.textContent = authMode === "signup" ? "Creating your account…" : "Signing in…";
   try {
     const result = authMode === "signup"
-      ? await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } })
+      ? await supabaseClient.auth.signUp({
+  email,
+  password,
+  options: {
+    data: { phone_number: phone },
+    emailRedirectTo: window.location.origin
+  }
+})
       : await supabaseClient.auth.signInWithPassword({ email, password });
     if (result.error) throw result.error;
     status.textContent = authMode === "signup"
