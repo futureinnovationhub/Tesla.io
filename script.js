@@ -1,8 +1,8 @@
 /* Telsa.io frontend.
    Contact/newsletter forms use FormSubmit. Real member accounts require Supabase configuration below.
    Never put a service-role key or email password in this public file. */
-const SUPABASE_URL = ""; // Add your Supabase project URL
-const SUPABASE_ANON_KEY = ""; // Add your Supabase publishable/anon key only
+const SUPABASE_URL = "https://hphcwopzrdpmbhbxlytb.supabase.co/rest/v1/"; // Add your Supabase project URL
+const SUPABASE_ANON_KEY = "sb_publishable_melguVIHsla7GGdQNB3urw_qziS26PK"; // Add your Supabase publishable/anon key only
 let supabaseClient = null;
 let authMode = "signup";
 
