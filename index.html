@@ -85,6 +85,8 @@
     <div class="auth-tabs"><button type="button" class="active" id="signupTab">Sign up</button><button type="button" id="loginTab">Sign in</button></div>
     <form id="authForm">
       <label for="authEmail">Email address</label><input id="authEmail" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com">
+    <label for="authPhone">Phone Number</label>
+<input id="authPhone" type="tel" autocomplete="tel" required maxlength="20" placeholder="+1 555 123 4567">
       <label for="authPassword">Password</label><input id="authPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters">
       <button class="button button-primary auth-submit" id="authSubmit" type="submit">Create account</button>
       <p class="form-note">Account registration becomes active after the Supabase project keys are added in <code>script.js</code>. Passwords are handled by Supabase, not stored on this site.</p>
